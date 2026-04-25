@@ -1,5 +1,6 @@
-import { FiHome, FiTrendingUp, FiYoutube, FiFolder, FiClock, FiThumbsUp } from "react-icons/fi";
-import { MdHistory } from "react-icons/md"; // Imported history from Material Design
+
+import { FiHome, FiTrendingUp, FiYoutube, FiFolder, FiClock, FiThumbsUp, FiSettings } from "react-icons/fi";
+import { MdHistory } from "react-icons/md";
 import { Link, useLocation } from "react-router-dom";
 
 const Sidebar = () => {
@@ -9,11 +10,12 @@ const Sidebar = () => {
     { icon: <FiHome />, label: "Home", path: "/" },
     { icon: <FiTrendingUp />, label: "Trending", path: "/trending" },
     { icon: <FiYoutube />, label: "Subscriptions", path: "/subscriptions" },
+    { icon: <FiSettings />, label: "Settings", path: "/settings" },
   ];
 
   const userLinks = [
     { icon: <FiFolder />, label: "Playlists", path: "/playlists" },
-    { icon: <MdHistory />, label: "History", path: "/history" }, // Updated icon here
+    { icon: <MdHistory />, label: "History", path: "/history" },
     { icon: <FiClock />, label: "Watch Later", path: "/watch-later" },
     { icon: <FiThumbsUp />, label: "Liked Videos", path: "/liked-videos" },
   ];
@@ -34,7 +36,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-16 lg:w-64 flex-shrink-0 border-r border-brand-secondary h-full overflow-y-auto py-4 px-2 bg-brand-dark">
+    <aside className="w-16 lg:w-64 flex-shrink-0 border-r border-brand-secondary h-full overflow-y-auto py-4 px-2 bg-brand-dark custom-scrollbar">
       <div className="flex flex-col gap-1 mb-4 border-b border-brand-secondary pb-4">
         {mainLinks.map((link) => (
           <NavItem key={link.label} {...link} />

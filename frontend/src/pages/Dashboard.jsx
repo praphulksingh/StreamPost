@@ -1,31 +1,65 @@
 import { useState, useEffect } from "react";
 import { dashboardService } from "../services/dashboard.service";
-import { FiEye, FiUsers, FiVideo, FiHeart } from "react-icons/fi";
+import { videoService } from "../services/video.service";
+import { FiEye, FiUsers, FiVideo, FiHeart, FiEdit2, FiTrash2, FiEyeOff } from "react-icons/fi";
 import { formatTimeAgo } from "../utils/formatters";
+import EditVideoModal from "../components/EditVideoModal";
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Modal States
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        const statsRes = await dashboardService.getChannelStats();
-        const videosRes = await dashboardService.getChannelVideos();
-        
-        setStats(statsRes.data);
-        setVideos(videosRes.data);
-      } catch (error) {
-        console.error("Failed to load dashboard", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
   }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const statsRes = await dashboardService.getChannelStats();
+      const videosRes = await dashboardService.getChannelVideos();
+      setStats(statsRes.data);
+      setVideos(videosRes.data);
+    } catch (error) {
+      console.error("Failed to load dashboard", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (videoId) => {
+    if (!window.confirm("Are you sure you want to delete this video? This cannot be undone.")) return;
+    try {
+      await videoService.deleteVideo(videoId);
+      setVideos(prev => prev.filter(v => v._id !== videoId));
+      // Optionally refresh stats here: fetchDashboardData();
+    } catch (error) {
+      console.error("Failed to delete video", error);
+    }
+  };
+
+  const handleTogglePublish = async (videoId) => {
+    try {
+      const res = await videoService.togglePublishStatus(videoId);
+      setVideos(prev => prev.map(v => v._id === videoId ? { ...v, isPublished: res.data.isPublished } : v));
+    } catch (error) {
+      console.error("Failed to toggle publish status", error);
+    }
+  };
+
+  const openEditModal = (video) => {
+    setSelectedVideo(video);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSuccess = (updatedVideo) => {
+    setVideos(prev => prev.map(v => v._id === updatedVideo._id ? updatedVideo : v));
+  };
 
   if (loading) return <div className="text-center mt-10 text-brand-muted">Loading dashboard...</div>;
 
@@ -37,12 +71,11 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto pb-10">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-white">Channel Dashboard</h1>
+    <div className="max-w-7xl mx-auto pb-10 px-4">
+      <div className="flex justify-between items-center mb-8 border-b border-brand-secondary pb-4 mt-6">
+        <h1 className="text-2xl font-bold text-white">Creator Dashboard</h1>
       </div>
 
-      {/* Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {statCards.map((stat, index) => (
           <div key={index} className="bg-brand-secondary/30 border border-brand-secondary rounded-xl p-6 flex flex-col gap-2">
@@ -53,10 +86,9 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Video Management Table */}
       <div className="bg-brand-secondary/20 border border-brand-secondary rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-brand-secondary">
-          <h2 className="text-xl font-bold text-white">Uploaded Videos</h2>
+          <h2 className="text-xl font-bold text-white">Manage Videos</h2>
         </div>
         
         <div className="overflow-x-auto">
@@ -66,7 +98,7 @@ const Dashboard = () => {
                 <th className="px-6 py-3 font-semibold">Video</th>
                 <th className="px-6 py-3 font-semibold">Status</th>
                 <th className="px-6 py-3 font-semibold">Date Uploaded</th>
-                <th className="px-6 py-3 font-semibold text-right">Views</th>
+                <th className="px-6 py-3 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -87,7 +119,36 @@ const Dashboard = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">{formatTimeAgo(video.createdAt)}</td>
-                    <td className="px-6 py-4 text-right font-medium">{video.views}</td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-3">
+                        {/* Toggle Publish Button */}
+                        <button 
+                          onClick={() => handleTogglePublish(video._id)}
+                          className="text-brand-text hover:text-white transition-colors"
+                          title={video.isPublished ? "Unpublish" : "Publish"}
+                        >
+                          {video.isPublished ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+                        </button>
+                        
+                        {/* Edit Button */}
+                        <button 
+                          onClick={() => openEditModal(video)}
+                          className="text-blue-400 hover:text-blue-300 transition-colors"
+                          title="Edit Video"
+                        >
+                          <FiEdit2 className="w-5 h-5" />
+                        </button>
+                        
+                        {/* Delete Button */}
+                        <button 
+                          onClick={() => handleDelete(video._id)}
+                          className="text-red-400 hover:text-red-300 transition-colors"
+                          title="Delete Video"
+                        >
+                          <FiTrash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -95,6 +156,13 @@ const Dashboard = () => {
           </table>
         </div>
       </div>
+
+      <EditVideoModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => setIsEditModalOpen(false)} 
+        video={selectedVideo} 
+        onSuccess={handleEditSuccess}
+      />
     </div>
   );
 };

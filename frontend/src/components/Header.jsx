@@ -9,6 +9,7 @@ const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleLogout = async () => {
     try {
@@ -35,10 +36,20 @@ const Header = () => {
 
       {/* --- Search Section --- */}
       <div className="flex-1 max-w-2xl px-4 flex justify-center">
-        <form className="flex w-full max-w-[600px] items-center" onSubmit={(e) => e.preventDefault()}>
+        <form 
+          className="flex w-full max-w-[600px] items-center" 
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (searchQuery.trim()) {
+              navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+            }
+          }}
+        >
           <input
             type="text"
             placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-brand-dark border border-brand-secondary rounded-l-full px-4 py-2 focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition-all text-white"
           />
           <button type="submit" className="bg-brand-secondary px-5 py-2 border border-l-0 border-brand-secondary rounded-r-full hover:bg-opacity-80 transition-all">

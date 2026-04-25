@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { videoService } from "../services/video.service";
 import VideoCard from "../components/VideoCard";
+import VideoSkeleton from "../components/VideoSkeleton";
 
 const Home = () => {
   const [videos, setVideos] = useState([]);
@@ -40,18 +41,9 @@ const Home = () => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 pb-10">
       {loading ? (
-        // SKELETON LOADERS
+        // 👇 UPDATED: Now using your reusable VideoSkeleton component 👇
         [...Array(12)].map((_, i) => (
-          <div key={i} className="flex flex-col gap-2 group animate-pulse">
-            <div className="w-full aspect-video bg-brand-secondary rounded-xl"></div>
-            <div className="flex gap-3 mt-2">
-              <div className="w-10 h-10 rounded-full bg-brand-secondary flex-shrink-0"></div>
-              <div className="flex flex-col gap-2 w-full mt-1">
-                <div className="h-4 bg-brand-secondary rounded w-3/4"></div>
-                <div className="h-3 bg-brand-secondary rounded w-1/2"></div>
-              </div>
-            </div>
-          </div>
+          <VideoSkeleton key={i} />
         ))
       ) : videos.length === 0 ? (
         // EMPTY STATE

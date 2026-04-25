@@ -1,37 +1,43 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import { userService } from "../services/user.service";
 import { videoService } from "../services/video.service";
 import { subscriptionService } from "../services/subscription.service";
+import { tweetService } from "../services/tweet.service";
 import VideoCard from "../components/VideoCard";
+import TweetCard from "../components/TweetCard";
 import { useAuth } from "../context/AuthContext";
 
 const ChannelProfile = () => {
   const { username } = useParams();
   const { user: currentUser } = useAuth();
+  const { register, handleSubmit, reset } = useForm();
   
   const [profile, setProfile] = useState(null);
   const [videos, setVideos] = useState([]);
+  const [tweets, setTweets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("videos"); // "videos" or "tweets"
 
   useEffect(() => {
     const fetchChannelData = async () => {
       try {
         setLoading(true);
-        // 1. Fetch the channel profile
+        // 1. Fetch profile
         const profileRes = await userService.getChannelProfile(username);
         const channelData = profileRes.data;
         setProfile(channelData);
 
-        // 2. Fetch the videos owned by this channel
-        const videosRes = await videoService.getAllVideos(1, 50); // Optional: add userId query param to backend
-        
-        // Temporarily filtering on frontend until backend search is fully wired for userId
-        const allVideos = videosRes.data?.docs || videosRes.data;
-        const channelVideos = allVideos.filter(v => v.owner._id === channelData._id || v.owner === channelData._id);
-        
-        setVideos(channelVideos);
+        // 2. Fetch videos
+        const videosRes = await videoService.getAllVideos({ userId: channelData._id });
+        setVideos(videosRes.data?.docs || videosRes.data || []);
+
+        // 3. Fetch tweets
+        const tweetsRes = await tweetService.getUserTweets(channelData._id);
+        setTweets(tweetsRes.data || []);
+
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load channel");
       } finally {
@@ -55,15 +61,37 @@ const ChannelProfile = () => {
     }
   };
 
+  const handleCreateTweet = async (data) => {
+    if (!data.content.trim()) return;
+    try {
+      const res = await tweetService.createTweet(data.content);
+      // Add the new tweet to the top of the feed with the populated owner info
+      const newTweet = { ...res.data, owner: profile }; 
+      setTweets(prev => [newTweet, ...prev]);
+      reset(); // Clear input
+    } catch (error) {
+      console.error("Failed to post tweet", error);
+    }
+  };
+
+  const handleDeleteTweet = async (tweetId) => {
+    try {
+      await tweetService.deleteTweet(tweetId);
+      setTweets(prev => prev.filter(t => t._id !== tweetId));
+    } catch (error) {
+      console.error("Failed to delete tweet", error);
+    }
+  };
+
   if (loading) return <div className="text-center mt-10 text-brand-muted">Loading channel...</div>;
   if (error || !profile) return <div className="text-center mt-10 text-red-500">{error}</div>;
 
   const isOwner = currentUser?.username === profile.username;
 
   return (
-    <div className="w-full flex flex-col gap-6 pb-10">
+    <div className="w-full flex flex-col pb-10">
       {/* Cover Image Banner */}
-      <div className="w-full h-32 sm:h-48 lg:h-64 bg-brand-secondary rounded-xl overflow-hidden relative">
+      <div className="w-full h-32 sm:h-48 lg:h-64 bg-brand-secondary relative">
         {profile.coverImage ? (
           <img src={profile.coverImage} alt="Cover" className="w-full h-full object-cover" />
         ) : (
@@ -72,18 +100,18 @@ const ChannelProfile = () => {
       </div>
 
       {/* Channel Header Info */}
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 px-4">
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 px-4 sm:px-8">
         <img 
           src={profile.avatar} 
           alt={profile.fullName} 
           className="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-brand-dark -mt-12 sm:-mt-16 relative z-10 bg-brand-secondary"
         />
         
-        <div className="flex-1 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center sm:items-start w-full gap-4">
+        <div className="flex-1 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center sm:items-start w-full gap-4 mt-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">{profile.fullName}</h1>
             <p className="text-brand-muted mt-1 text-sm sm:text-base">
-              @{profile.username} • {profile.subscribersCount} subscribers • {profile.channelsSubscribedToCount} subscribed
+              @{profile.username} • {profile.subscribersCount} subscribers
             </p>
           </div>
           
@@ -107,21 +135,78 @@ const ChannelProfile = () => {
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="w-full h-px bg-brand-secondary mt-2"></div>
+      {/* Tab Navigation */}
+      <div className="flex gap-8 px-4 sm:px-8 mt-8 border-b border-brand-secondary">
+        <button 
+          onClick={() => setActiveTab("videos")}
+          className={`pb-3 font-semibold text-lg transition-colors border-b-2 ${
+            activeTab === "videos" ? "border-brand-accent text-white" : "border-transparent text-brand-muted hover:text-white"
+          }`}
+        >
+          Videos
+        </button>
+        <button 
+          onClick={() => setActiveTab("tweets")}
+          className={`pb-3 font-semibold text-lg transition-colors border-b-2 ${
+            activeTab === "tweets" ? "border-brand-accent text-white" : "border-transparent text-brand-muted hover:text-white"
+          }`}
+        >
+          Community
+        </button>
+      </div>
 
-      {/* Channel Videos Grid */}
-      <div className="px-4">
-        <h2 className="text-xl font-bold text-white mb-4">Videos</h2>
-        {videos.length === 0 ? (
-          <p className="text-brand-muted">This channel hasn't uploaded any videos yet.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {videos.map((video) => (
-              <VideoCard key={video._id} video={video} />
-            ))}
+      {/* Tab Content */}
+      <div className="px-4 sm:px-8 mt-6">
+        
+        {/* VIDEOS TAB */}
+        {activeTab === "videos" && (
+          videos.length === 0 ? (
+            <p className="text-brand-muted text-center mt-10">This channel hasn't uploaded any videos yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {videos.map((video) => (
+                <VideoCard key={video._id} video={video} />
+              ))}
+            </div>
+          )
+        )}
+
+        {/* COMMUNITY TAB */}
+        {activeTab === "tweets" && (
+          <div className="max-w-3xl mx-auto flex flex-col gap-6">
+            
+            {/* Create Post Input (Only visible to owner) */}
+            {isOwner && (
+              <form onSubmit={handleSubmit(handleCreateTweet)} className="bg-brand-secondary/10 border border-brand-secondary p-4 rounded-xl mb-4">
+                <textarea 
+                  {...register("content", { required: true })}
+                  placeholder="What's on your mind?"
+                  className="w-full bg-transparent text-white outline-none resize-none h-20 placeholder:text-brand-muted"
+                />
+                <div className="flex justify-end mt-2 pt-2 border-t border-brand-secondary">
+                  <button type="submit" className="bg-brand-accent hover:bg-opacity-90 text-white font-semibold px-6 py-2 rounded-full transition-all">
+                    Post
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Tweets Feed */}
+            {tweets.length === 0 ? (
+              <p className="text-brand-muted text-center mt-10">No community posts yet.</p>
+            ) : (
+              tweets.map((tweet) => (
+                <TweetCard 
+                  key={tweet._id} 
+                  tweet={tweet} 
+                  isOwner={isOwner} 
+                  onDelete={handleDeleteTweet} 
+                />
+              ))
+            )}
           </div>
         )}
+
       </div>
     </div>
   );
