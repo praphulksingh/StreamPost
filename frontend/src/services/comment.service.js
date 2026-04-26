@@ -19,5 +19,14 @@ export const commentService = {
     // Adjust the URL if you named your backend route differently!
     const response = await api.post(`/comments/reply/${commentId}`, data);
     return response.data;
+  },
+
+  getTweetComments: async (tweetId) => {
+    const response = await api.get(`/comments/t/${tweetId}`);
+    return response.data;
+  },
+  addTweetComment: async (tweetId, data) => {
+    const response = await api.post(`/comments/t/${tweetId}`, data);
+    return response.data;
   }
 };

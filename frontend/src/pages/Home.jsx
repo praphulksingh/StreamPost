@@ -2,12 +2,29 @@ import { useState, useEffect } from "react";
 import { videoService } from "../services/video.service";
 import VideoCard from "../components/VideoCard";
 import VideoSkeleton from "../components/VideoSkeleton";
+import { useAuth } from "../context/AuthContext";
+import AuthPrompt from "../components/AuthPrompt";
+
 
 const Home = () => {
+  const { user } = useAuth(); 
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-full mt-10">
+        <AuthPrompt 
+          title="Welcome to ChaiTube" 
+          description="Please sign in or create an account to explore amazing videos and join the community." 
+        />
+      </div>
+    );
+  }
+
+  
   useEffect(() => {
     const fetchVideos = async () => {
       try {

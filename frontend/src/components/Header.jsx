@@ -37,7 +37,7 @@ const Header = ({ toggleSidebar }) => {
         </button>
         <Link to="/" className="text-xl font-bold flex items-center gap-2">
           <span className="text-brand-accent text-2xl">▶</span>
-          <span className="hidden sm:block tracking-tighter">ChaiTube</span>
+          <span className="hidden sm:block tracking-tighter">StreamPost</span>
         </Link>
       </div>
 

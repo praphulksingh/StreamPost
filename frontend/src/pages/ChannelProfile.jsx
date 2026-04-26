@@ -1,22 +1,18 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useParams,useNavigate } from "react-router-dom";
 import { userService } from "../services/user.service";
 import { videoService } from "../services/video.service";
 import { subscriptionService } from "../services/subscription.service";
-import { tweetService } from "../services/tweet.service";
 import VideoCard from "../components/VideoCard";
-import TweetCard from "../components/TweetCard";
+import ChannelTweets from "../components/ChannelTweets"; // Handles the entire Community Tab
 import { useAuth } from "../context/AuthContext";
 
 const ChannelProfile = () => {
   const { username } = useParams();
   const { user: currentUser } = useAuth();
-  const { register, handleSubmit, reset } = useForm();
-  
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [videos, setVideos] = useState([]);
-  const [tweets, setTweets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("videos"); // "videos" or "tweets"
@@ -33,10 +29,6 @@ const ChannelProfile = () => {
         // 2. Fetch videos
         const videosRes = await videoService.getAllVideos({ userId: channelData._id });
         setVideos(videosRes.data?.docs || videosRes.data || []);
-
-        // 3. Fetch tweets
-        const tweetsRes = await tweetService.getUserTweets(channelData._id);
-        setTweets(tweetsRes.data || []);
 
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load channel");
@@ -58,28 +50,6 @@ const ChannelProfile = () => {
       }));
     } catch (error) {
       console.error("Subscription failed", error);
-    }
-  };
-
-  const handleCreateTweet = async (data) => {
-    if (!data.content.trim()) return;
-    try {
-      const res = await tweetService.createTweet(data.content);
-      // Add the new tweet to the top of the feed with the populated owner info
-      const newTweet = { ...res.data, owner: profile }; 
-      setTweets(prev => [newTweet, ...prev]);
-      reset(); // Clear input
-    } catch (error) {
-      console.error("Failed to post tweet", error);
-    }
-  };
-
-  const handleDeleteTweet = async (tweetId) => {
-    try {
-      await tweetService.deleteTweet(tweetId);
-      setTweets(prev => prev.filter(t => t._id !== tweetId));
-    } catch (error) {
-      console.error("Failed to delete tweet", error);
     }
   };
 
@@ -128,7 +98,9 @@ const ChannelProfile = () => {
             </button>
           )}
           {isOwner && (
-            <button className="bg-brand-secondary text-white font-medium px-6 py-2.5 rounded-full hover:bg-white/10 transition-colors">
+            <button 
+            onClick={() => navigate("/settings")}
+            className="bg-brand-secondary text-white font-medium px-6 py-2.5 rounded-full hover:bg-white/10 transition-colors">
               Customize Channel
             </button>
           )}
@@ -171,40 +143,9 @@ const ChannelProfile = () => {
           )
         )}
 
-        {/* COMMUNITY TAB */}
+        {/* COMMUNITY TAB (Delegated to ChannelTweets Component) */}
         {activeTab === "tweets" && (
-          <div className="max-w-3xl mx-auto flex flex-col gap-6">
-            
-            {/* Create Post Input (Only visible to owner) */}
-            {isOwner && (
-              <form onSubmit={handleSubmit(handleCreateTweet)} className="bg-brand-secondary/10 border border-brand-secondary p-4 rounded-xl mb-4">
-                <textarea 
-                  {...register("content", { required: true })}
-                  placeholder="What's on your mind?"
-                  className="w-full bg-transparent text-white outline-none resize-none h-20 placeholder:text-brand-muted"
-                />
-                <div className="flex justify-end mt-2 pt-2 border-t border-brand-secondary">
-                  <button type="submit" className="bg-brand-accent hover:bg-opacity-90 text-white font-semibold px-6 py-2 rounded-full transition-all">
-                    Post
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* Tweets Feed */}
-            {tweets.length === 0 ? (
-              <p className="text-brand-muted text-center mt-10">No community posts yet.</p>
-            ) : (
-              tweets.map((tweet) => (
-                <TweetCard 
-                  key={tweet._id} 
-                  tweet={tweet} 
-                  isOwner={isOwner} 
-                  onDelete={handleDeleteTweet} 
-                />
-              ))
-            )}
-          </div>
+          <ChannelTweets channelId={profile._id} />
         )}
 
       </div>
