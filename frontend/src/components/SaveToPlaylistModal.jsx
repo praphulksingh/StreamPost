@@ -33,12 +33,15 @@ const SaveToPlaylistModal = ({ isOpen, onClose, videoId }) => {
     try {
       await playlistService.addVideoToPlaylist(videoId, playlistId);
       setMessage("Added to playlist!");
-      
-      // Clear the success message after 2 seconds
       setTimeout(() => setMessage(""), 2000);
     } catch (error) {
-      // If the backend says "Video is already in the playlist", show that!
-      setMessage(error.response?.data?.message || "Failed to add video.");
+      // 👇 FIX: Look in all possible places for the backend error message
+      const errorMessage = 
+        error.response?.data?.message || // Standard ApiError
+        error.response?.data?.error ||   // Fallback
+        "Video is already in this playlist.";          // Ultimate fallback
+
+      setMessage(errorMessage);
       setTimeout(() => setMessage(""), 2000);
     }
   };

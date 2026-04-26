@@ -13,32 +13,36 @@ import PlaylistDetail from "./pages/PlaylistDetail";
 import Search from "./pages/Search";
 import Trending from "./pages/Trending";
 import Settings from "./pages/Settings";
-
-
+import LikedVideos from "./pages/LikedVideos";
+import WatchLater from "./pages/WatchLater";
+import Subscriptions from "./pages/Subscriptions"; // Added Subscriptions import
 
 function App() {
   return (
     <Router>
       <ErrorBoundary>
-      <Routes>
-        {/* Public / Auth Route */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Routes>
+          {/* Public / Auth Route */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        {/* Main App Routes wrapped in the Layout */}
-        <Route path="/" element={<MainLayout />}>
-          <Route path="/search" element={<Search />} />
-          <Route path="/trending" element={<Trending />} />
-          <Route index element={<Home />} />
-          <Route path="/video/:videoId" element={<VideoDetail />} />
-          <Route path="/channel/:username" element={<ChannelProfile />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/playlists" element={<Playlists />} />
-          <Route path="/playlist/:playlistId" element={<PlaylistDetail />} />
-        </Route>
-      </Routes>
+          {/* Main App Routes wrapped in the Layout */}
+          <Route path="/" element={<MainLayout />}>
+            <Route index element={<Home />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/trending" element={<Trending />} />
+            <Route path="/video/:videoId" element={<VideoDetail />} />
+            <Route path="/channel/:username" element={<ChannelProfile />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/playlists" element={<Playlists />} />
+            <Route path="/playlist/:playlistId" element={<PlaylistDetail />} />
+            <Route path="/liked-videos" element={<LikedVideos />} />
+            <Route path="/watch-later" element={<WatchLater />} />
+            <Route path="/subscriptions" element={<Subscriptions />} />
+          </Route>
+        </Routes>
       </ErrorBoundary>
     </Router>
   );

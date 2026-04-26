@@ -1,31 +1,38 @@
-import { useState } from "react"; // ADD THIS
-import { FiMenu, FiSearch, FiBell, FiUser, FiLogOut, FiUpload } from "react-icons/fi"; // Added FiUpload
+import { useState } from "react";
+import { FiMenu, FiSearch, FiBell, FiUser, FiLogOut, FiUpload } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authService } from "../services/auth.service";
-import VideoUploadModal from "./VideoUploadModal"; // ADD THIS
+import VideoUploadModal from "./VideoUploadModal";
 
-const Header = () => {
+// 👇 FIX: Accepting toggleSidebar as a prop
+const Header = ({ toggleSidebar }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  // 👇 FIX: State for the notification bell
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
       await authService.logout();
-      logout(); // Clear the global context state
-      navigate("/"); // Redirect to the home page
+      logout();
+      navigate("/");
     } catch (error) {
       console.error("Logout failed", error);
     }
   };
 
   return (
-    <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-brand-dark border-b border-brand-secondary sticky top-0 z-50">
+    <header className="h-16 flex items-center justify-between px-4 sm:px-6 bg-brand-dark border-b border-brand-secondary sticky top-0 z-50 shrink-0">
       {/* --- Logo Section --- */}
       <div className="flex items-center gap-4">
-        <button className="p-2 hover:bg-brand-secondary rounded-full transition-colors">
+        {/* 👇 FIX: Wired up the Burger Menu */}
+        <button 
+          onClick={toggleSidebar}
+          className="p-2 hover:bg-brand-secondary rounded-full transition-colors"
+        >
           <FiMenu className="w-6 h-6 text-brand-text" />
         </button>
         <Link to="/" className="text-xl font-bold flex items-center gap-2">
@@ -60,11 +67,29 @@ const Header = () => {
 
       {/* --- Auth / User Section --- */}
       <div className="flex items-center gap-2 sm:gap-4">
-        <button className="p-2 hover:bg-brand-secondary rounded-full transition-colors hidden sm:block">
-          <FiBell className="w-6 h-6 text-brand-text" />
-        </button>
+        
+        {/* 👇 FIX: Notifications Dropdown */}
+        <div className="relative hidden sm:block">
+          <button 
+            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            className="p-2 hover:bg-brand-secondary rounded-full transition-colors relative"
+          >
+            <FiBell className="w-6 h-6 text-brand-text" />
+            <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-brand-accent rounded-full border-2 border-brand-dark"></span>
+          </button>
 
-        {/* Conditional Rendering based on Auth State */}
+          {isNotificationsOpen && (
+            <div className="absolute right-0 mt-2 w-72 bg-[#181818] border border-brand-secondary rounded-xl shadow-2xl z-50 py-2">
+              <div className="px-4 py-2 border-b border-brand-secondary">
+                <h3 className="font-bold text-white">Notifications</h3>
+              </div>
+              <div className="px-4 py-6 text-center text-brand-muted text-sm">
+                No new notifications right now.
+              </div>
+            </div>
+          )}
+        </div>
+
         {user ? (
           <div className="flex items-center gap-3 sm:gap-4">
             <button 

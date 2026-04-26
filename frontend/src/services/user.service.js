@@ -32,6 +32,13 @@ export const userService = {
       headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;
-  }
+  },
+
+  getWatchLater: async () => {
+    // If you added it to playlist routes, it should be "/playlist/watch-later" or "/playlists/watch-later" depending on your app.js setup. 
+    // Assuming your playlist route is api/v1/playlist:
+    const response = await api.get("/playlist/watch-later"); 
+    return response.data;
+  },
 };
 
